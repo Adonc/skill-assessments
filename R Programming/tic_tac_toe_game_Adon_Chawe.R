@@ -1,11 +1,3 @@
-# addressed the following:
-# use of for_loops in the computer_moves function, used sapply this time.
-# removed global variables, and use of <<- to assign values
-# created a method to validate user play move choice.
-
-# Challenge: having issues assign the value from sapply, the code slows when
-# i use assign(), but works okay if i use <<- within the computer_moves function.
-
 win_positons <-
   list(
     c(1, 2, 3),
@@ -83,6 +75,36 @@ validate_user_input <- function(state, choice) {
   }
   return(choice)
 }
+# check if board has been used up
+board_filled <- function(state, h_avatar, c_avatar, caller) {
+  filled <- FALSE
+  if (sum(state == h_avatar) + sum(state == c_avatar) == 9 &&
+    win_status(state) == FALSE) {
+    cat("Its a tie \n")
+    display_board(state)
+    cat("\n")
+    filled <- TRUE
+  }
+  # if win status is TRUE, end game
+  if (win_status(state) == TRUE) {
+    cat(caller, " wins \n")
+    display_board(state)
+    cat("\n")
+    filled <- TRUE
+  }
+  return(filled)
+}
+
+human_move <- function(state, h_avatar) {
+  cat("Whats your move: \n")
+  choice <- readLines(con = con, n = 1)
+  choice <- as.numeric(choice)
+  # validate input
+  choice <- validate_user_input(state, choice)
+  state[choice] <- h_avatar
+  return(state)
+}
+
 # This function clears the console and initiates the game
 play <- function() {
   # display message
@@ -115,30 +137,14 @@ computer_plays_first <- function(h_avatar, c_avatar) {
   while (win_status(state) == FALSE) {
     state <- computer_moves(state, h_avatar, c_avatar)
     display_board(state)
-    cat("\n") # add space after board
+    cat("\n")
     win_status(state)
     # check if game board has been used up and establish win or draw
-    if (sum(state == h_avatar) + sum(state == c_avatar) == 9 &&
-      win_status(state) == FALSE) {
-      cat("Its a tie \n")
-      display_board(state)
-      cat("\n")
+    if (board_filled(state, h_avatar, c_avatar, caller = "Computer (X)") == TRUE) {
       break
     }
-    # if win status is TRUE, end game
-    if (win_status(state) == TRUE) {
-      cat("Computer(X) wins \n")
-      display_board(state)
-      cat("\n")
-      break
-    }
-    # Human input after computer move
-    cat("Whats your move: \n")
-    choice <- readLines(con = con, n = 1)
-    choice <- as.numeric(choice)
-    # validate input
-    choice <- validate_user_input(state, choice)
-    state[choice] <- h_avatar
+
+    state <- human_move(state, h_avatar)
     display_board(state)
     cat("\n")
     win_status(state)
@@ -151,37 +157,20 @@ computer_plays_first <- function(h_avatar, c_avatar) {
   }
 }
 
+
 # This function is invoked when human selects x as their avatar,
 # allowing them to play first
 human_plays_first <- function(h_avatar, c_avatar) {
   state <- as.character(1:9)
   while (win_status(state) == FALSE) {
-    # get human choice
-    cat("Whats your move: \n")
-    choice <- readLines(con = con, n = 1)
-    choice <- as.numeric(choice)
-    # validate input
-    choice <- validate_user_input(state, choice)
-    state[choice] <- h_avatar
+    state <- human_move(state, h_avatar)
     display_board(state)
     cat("\n")
     win_status(state)
     # check if board has been used up
-    if (sum(state == h_avatar) + sum(state == c_avatar) == 9 &&
-      win_status(state) == FALSE) {
-      cat("Its a tie \n")
-      display_board(state)
-      cat("\n")
+    if (board_filled(state, h_avatar, c_avatar, caller = "Human (X)") == TRUE) {
       break
     }
-    # if win status is TRUE, end game
-    if (win_status(state) == TRUE) {
-      cat("Human(X) wins \n")
-      display_board(state)
-      cat("\n")
-      break
-    }
-
     # computer move
     state <- computer_moves(state, h_avatar, c_avatar)
     display_board(state)
@@ -243,17 +232,18 @@ computer_moves <- function(state, h_avatar, c_avatar) {
 
 # This function evaluates the state, to establish if one of the player has won
 win_status <- function(state) {
-  win <- FALSE
-  for (i in 1:length(win_positons)) {
-    # check if all three position in a triple contain same avatar
-    if (sum(state[win_positons[[i]]] == "X") == 3) {
-      win <- TRUE
+  win <- sapply(1:length(win_positons), function(i) {
+    if (sum(state[win_positons[[i]]] == "X") == 3 || sum(state[win_positons[[i]]] == "O") == 3) {
+      return(TRUE)
+    } else {
+      return(FALSE)
     }
-    if (sum(state[win_positons[[i]]] == "O") == 3) {
-      win <- TRUE
-    }
+  })
+  if ("TRUE" %in% win) {
+    return(TRUE)
+  } else {
+    return(FALSE)
   }
-  return(win)
 }
 # initiate game
 play()
