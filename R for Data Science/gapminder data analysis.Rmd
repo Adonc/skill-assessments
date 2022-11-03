@@ -110,6 +110,7 @@ Europe_Asia %>%
 Europe_Asia <- droplevels(Europe_Asia)
 t.test(Europe_Asia$`Imports of goods and services (% of GDP)` ~ continent, data = Europe_Asia)
 ```
+To check if there is a difference between imports in Asia and Europe, i used a t.test, this is because i am comparing the means of two groups. 
 The differences in Imports of goods and Services is not significant between Asia and Europe. this can be observed from the p-value which is greater 0.05, i fail to reject the null hypothesis which suggests that there is no difference.
 
 3. What is the country (or countries) that has the highest 'Population density (people per sq. km of land area)' across all years? (i.e., which country has the highest average ranking in this category across each time point in the dataset?)
