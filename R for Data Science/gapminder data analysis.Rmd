@@ -1,0 +1,153 @@
+---
+title: "R for Data Science"
+author: "Adon Chawe"
+date: '2022-10-19'
+output: html_document
+---
+
+```{r setup, include=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(plotly)
+library(tidyverse)
+library(DT)
+```
+
+## Part 1
+1. Read in the gapminder_clean.csv data as a tibble using read_csv.
+
+```{r, message=FALSE}
+gapminder_clean <- read_csv("gapminder_clean.csv")
+datatable(gapminder_clean)
+```
+
+2. Filter the data to include only rows where Year is 1962 and then make a scatter plot comparing 'CO2 emissions (metric tons per capita)' and gdpPercap for the filtered data.
+```{r}
+gapminder_clean %>%
+  filter(Year == 1962) %>%
+  ggplot(aes(x = `CO2 emissions (metric tons per capita)`, y = gdpPercap)) +
+  geom_point() +
+  theme_classic()
+```
+
+3. On the filtered data, calculate the correlation of 'CO2 emissions (metric tons per capita)' and gdpPercap. What is the correlation and associated p value?
+```{r}
+filtered_data <- gapminder_clean %>%
+  filter(Year == 1962)
+correlation <- cor.test(filtered_data$gdpPercap, filtered_data$`CO2 emissions (metric tons per capita)`)
+
+cat("The Correlation is: ", correlation$estimate, "\n P-VALUE is: ", correlation$p.value)
+```
+4. On the unfiltered data, answer “In what year is the correlation between 'CO2 emissions (metric tons per capita)' and gdpPercap the strongest?” Filter the dataset to that year for the next step
+
+```{r}
+gapminder_clean %>%
+  group_by(Year) %>%
+  summarise(correlation = cor.test(`CO2 emissions (metric tons per capita)`, gdpPercap)$estimate) %>%
+  arrange(desc(correlation)) %>%
+  filter(correlation == max(correlation))
+
+filter_data_1967 <- gapminder_clean %>%
+  filter(Year == 1967)
+```
+The year in which the correlation between Carbon dioxide and gdpPercap was the highest was 1967.
+
+5. Using plotly, create an interactive scatter plot comparing 'CO2 emissions (metric tons per capita)' and gdpPercap, where the point size is determined by pop (population) and the color is determined by the continent. You can easily convert any ggplot plot to a plotly plot using the ggplotly() command.
+```{r}
+g <- ggplot(filter_data_1967, aes(x = `CO2 emissions (metric tons per capita)`, y = gdpPercap, color = continent, size = pop)) +
+  geom_point() +
+  theme_classic()
+ggplotly(g)
+```
+
+## Part 2
+
+1. What is the relationship between continent and 'Energy use (kg of oil equivalent per capita)'? (stats test needed)
+```{r}
+gapminder_clean %>%
+  na.omit() %>%
+  ggplot(aes(x = continent, y = `Energy use (kg of oil equivalent per capita)`)) +
+  geom_boxplot() +
+  scale_y_log10() +
+  theme_classic()
+```
+
+Select Continent and `Energy use (kg of oil equivalent per capita)` Columns 
+
+```{r}
+continent_data <- gapminder_clean %>%
+  na.omit() %>%
+  select(continent, `Energy use (kg of oil equivalent per capita)`)
+continent_data %>%
+  group_by(continent) %>%
+  summarise(Mean_Energy_use = mean(`Energy use (kg of oil equivalent per capita)`, na.rm = TRUE)) %>%
+  arrange(Mean_Energy_use)
+```
+
+To Check the relationships between Continents in terms of Energy use, i will apply Analysis of Variance (ANOVA). this is because i am comparing means of more than two groups.
+
+```{r}
+continent_data %>%
+  aov(`Energy use (kg of oil equivalent per capita)` ~ continent, data = .) %>%
+  summary()
+
+continent_data %>%
+  aov(`Energy use (kg of oil equivalent per capita)` ~ continent, data = .) %>%
+  TukeyHSD()
+```
+Overall, there is a difference between continents in terms of energy consumption. This is noted using the p-value, which less than 0.05.
+Going by Continents, energy consumption between Oceania and Europe is not different, so is between America and Asia. as noted in the results above. 
+
+2. Is there a significant difference between Europe and Asia with respect to 'Imports of goods and services (% of GDP)' in the years after 1990? (stats test needed)
+
+```{r}
+Europe_Asia <- gapminder_clean %>%
+  filter(Year > 1990, continent %in% c("Europe", "Asia"))
+
+Europe_Asia %>%
+  ggplot(aes(x = continent, y = `Imports of goods and services (% of GDP)`)) +
+  geom_boxplot() +
+  theme_classic()
+Europe_Asia <- droplevels(Europe_Asia)
+t.test(Europe_Asia$`Imports of goods and services (% of GDP)` ~ continent, data = Europe_Asia)
+```
+The differences in Imports of goods and Services is not significant between Asia and Europe. this can be observed from the p-value which is greater 0.05, i fail to reject the null hypothesis which suggests that there is no difference.
+
+3. What is the country (or countries) that has the highest 'Population density (people per sq. km of land area)' across all years? (i.e., which country has the highest average ranking in this category across each time point in the dataset?)
+```{r}
+average_pop_country_years <- gapminder_clean %>%
+  group_by(`Country Name`, Year) %>%
+  summarise(Average_per_year = mean(`Population density (people per sq. km of land area)`)) %>%
+  arrange(desc(Average_per_year))
+
+g <- ggplot(average_pop_country_years, aes(x = Year, y = Average_per_year, color = `Country Name`)) +
+  geom_line() +
+  ggtitle("Population Density across all years") +
+  ylab("Population density (people per sq. km of land area)'") +
+  xlab("Year") +
+  theme_classic() +
+  theme(legend.position = "none")
+ggplotly(g)
+```
+It can be observed from the Plot. when you hover the top lines,  that Monaco and Monaco SAR, China, have had a persistently high population density through out the years covered.
+
+4. What country (or countries) has shown the greatest increase in 'Life expectancy at birth, total (years)' since 1962?
+```{r}
+life_exp_over_years <- gapminder_clean %>%
+  select(Year, `Country Name`, `Life expectancy at birth, total (years)`) %>%
+  filter(Year %in% c(min(Year), max(Year))) %>%
+  spread(Year, `Life expectancy at birth, total (years)`) %>%
+  mutate(pop_dif = `2007` - `1962`) %>%
+  arrange(desc(pop_dif)) %>%
+  top_n(10, pop_dif)
+datatable(life_exp_over_years)
+
+
+top_high_expe_countries <- life_exp_over_years$`Country Name`
+ggplo <- gapminder_clean %>%
+  filter(`Country Name` %in% top_high_expe_countries) %>%
+  ggplot(aes(x = Year, y = `Life expectancy at birth, total (years)`, color = `Country Name`)) +
+  geom_line() +
+  geom_point()
+ggplotly(ggplo)
+```
+It can be observed from the plot and the table that the countries Maldives and Bhutan have had an increase in life Expectancy since 1962. With Maldives having increased by 37 years While Bhutan increased by 33 years.
