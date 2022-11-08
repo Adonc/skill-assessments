@@ -2,7 +2,14 @@
 title: "R for Data Science"
 author: "Adon Chawe"
 date: '2022-10-19'
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 3
+    number_sections: false
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE, message=FALSE}
@@ -13,22 +20,27 @@ library(DT)
 ```
 
 ## Part 1
+### Question 1
 1. Read in the gapminder_clean.csv data as a tibble using read_csv.
 
 ```{r, message=FALSE}
 gapminder_clean <- read_csv("gapminder_clean.csv")
-datatable(gapminder_clean)
+datatable(gapminder_clean, options = list(pageLength = 10, scrollX = '400px', filter = 'top'))
 ```
 
+### Question 2
 2. Filter the data to include only rows where Year is 1962 and then make a scatter plot comparing 'CO2 emissions (metric tons per capita)' and gdpPercap for the filtered data.
-```{r}
+```{r, warning=FALSE}
 gapminder_clean %>%
   filter(Year == 1962) %>%
   ggplot(aes(x = `CO2 emissions (metric tons per capita)`, y = gdpPercap)) +
   geom_point() +
+  scale_y_log10()+
+  scale_x_log10()+
   theme_classic()
 ```
 
+### Question 3
 3. On the filtered data, calculate the correlation of 'CO2 emissions (metric tons per capita)' and gdpPercap. What is the correlation and associated p value?
 ```{r}
 filtered_data <- gapminder_clean %>%
@@ -37,6 +49,8 @@ correlation <- cor.test(filtered_data$gdpPercap, filtered_data$`CO2 emissions (m
 
 cat("The Correlation is: ", correlation$estimate, "\n P-VALUE is: ", correlation$p.value)
 ```
+
+### Question 4
 4. On the unfiltered data, answer “In what year is the correlation between 'CO2 emissions (metric tons per capita)' and gdpPercap the strongest?” Filter the dataset to that year for the next step
 
 ```{r}
@@ -47,10 +61,12 @@ gapminder_clean %>%
   filter(correlation == max(correlation))
 
 filter_data_1967 <- gapminder_clean %>%
-  filter(Year == 1967)
+  filter(Year == 1967)%>%
+  drop_na(continent)
 ```
 The year in which the correlation between Carbon dioxide and gdpPercap was the highest was 1967.
 
+### Question 5
 5. Using plotly, create an interactive scatter plot comparing 'CO2 emissions (metric tons per capita)' and gdpPercap, where the point size is determined by pop (population) and the color is determined by the continent. You can easily convert any ggplot plot to a plotly plot using the ggplotly() command.
 ```{r}
 g <- ggplot(filter_data_1967, aes(x = `CO2 emissions (metric tons per capita)`, y = gdpPercap, color = continent, size = pop)) +
@@ -61,6 +77,7 @@ ggplotly(g)
 
 ## Part 2
 
+### Question 1
 1. What is the relationship between continent and 'Energy use (kg of oil equivalent per capita)'? (stats test needed)
 ```{r}
 gapminder_clean %>%
@@ -97,6 +114,7 @@ continent_data %>%
 Overall, there is a difference between continents in terms of energy consumption. This is noted using the p-value, which less than 0.05.
 Going by Continents, energy consumption between Oceania and Europe is not different, so is between America and Asia. as noted in the results above. 
 
+### Question 2
 2. Is there a significant difference between Europe and Asia with respect to 'Imports of goods and services (% of GDP)' in the years after 1990? (stats test needed)
 
 ```{r}
@@ -113,24 +131,27 @@ t.test(Europe_Asia$`Imports of goods and services (% of GDP)` ~ continent, data 
 To check if there is a difference between imports in Asia and Europe, i used a t.test, this is because i am comparing the means of two groups. 
 The differences in Imports of goods and Services is not significant between Asia and Europe. this can be observed from the p-value which is greater 0.05, i fail to reject the null hypothesis which suggests that there is no difference.
 
+### Question 3
 3. What is the country (or countries) that has the highest 'Population density (people per sq. km of land area)' across all years? (i.e., which country has the highest average ranking in this category across each time point in the dataset?)
 ```{r}
 average_pop_country_years <- gapminder_clean %>%
-  group_by(`Country Name`, Year) %>%
-  summarise(Average_per_year = mean(`Population density (people per sq. km of land area)`)) %>%
-  arrange(desc(Average_per_year))
+  select(Year, `Country Name`, `Population density (people per sq. km of land area)`)%>%
+  drop_na()%>%
+  group_by(Year)%>%
+  slice(which.max(`Population density (people per sq. km of land area)`))
+datatable(average_pop_country_years)
 
-g <- ggplot(average_pop_country_years, aes(x = Year, y = Average_per_year, color = `Country Name`)) +
+g <- ggplot(average_pop_country_years, aes(x = Year, y = `Population density (people per sq. km of land area)`, color = `Country Name`)) +
   geom_line() +
   ggtitle("Population Density across all years") +
   ylab("Population density (people per sq. km of land area)'") +
   xlab("Year") +
-  theme_classic() +
-  theme(legend.position = "none")
+  theme_classic()
 ggplotly(g)
 ```
-It can be observed from the Plot. when you hover the top lines,  that Monaco and Monaco SAR, China, have had a persistently high population density through out the years covered.
+It can be observed from the table and Plot, that Monaco and Monaco SAR, China, have had a persistently high population density through out the years covered.
 
+### Question 4
 4. What country (or countries) has shown the greatest increase in 'Life expectancy at birth, total (years)' since 1962?
 ```{r}
 life_exp_over_years <- gapminder_clean %>%
@@ -140,7 +161,7 @@ life_exp_over_years <- gapminder_clean %>%
   mutate(pop_dif = `2007` - `1962`) %>%
   arrange(desc(pop_dif)) %>%
   top_n(10, pop_dif)
-datatable(life_exp_over_years)
+datatable(life_exp_over_years ,options = list(pageLength = 10, scrollX = '400px', filter = 'top'))
 
 
 top_high_expe_countries <- life_exp_over_years$`Country Name`
