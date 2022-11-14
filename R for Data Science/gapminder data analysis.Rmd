@@ -25,7 +25,7 @@ library(DT)
 
 ```{r, message=FALSE}
 gapminder_clean <- read_csv("gapminder_clean.csv")
-datatable(gapminder_clean, options = list(pageLength = 10, scrollX = '400px', filter = 'top'))
+datatable(gapminder_clean, options = list(pageLength = 10, scrollX = "400px", filter = "top"))
 ```
 
 ### Question 2
@@ -35,8 +35,8 @@ gapminder_clean %>%
   filter(Year == 1962) %>%
   ggplot(aes(x = `CO2 emissions (metric tons per capita)`, y = gdpPercap)) +
   geom_point() +
-  scale_y_log10()+
-  scale_x_log10()+
+  scale_y_log10() +
+  scale_x_log10() +
   theme_classic()
 ```
 
@@ -61,7 +61,7 @@ gapminder_clean %>%
   filter(correlation == max(correlation))
 
 filter_data_1967 <- gapminder_clean %>%
-  filter(Year == 1967)%>%
+  filter(Year == 1967) %>%
   drop_na(continent)
 ```
 The year in which the correlation between Carbon dioxide and gdpPercap was the highest was 1967.
@@ -71,6 +71,8 @@ The year in which the correlation between Carbon dioxide and gdpPercap was the h
 ```{r}
 g <- ggplot(filter_data_1967, aes(x = `CO2 emissions (metric tons per capita)`, y = gdpPercap, color = continent, size = pop)) +
   geom_point() +
+  scale_y_log10() +
+  scale_x_log10() +
   theme_classic()
 ggplotly(g)
 ```
@@ -135,21 +137,17 @@ The differences in Imports of goods and Services is not significant between Asia
 3. What is the country (or countries) that has the highest 'Population density (people per sq. km of land area)' across all years? (i.e., which country has the highest average ranking in this category across each time point in the dataset?)
 ```{r}
 average_pop_country_years <- gapminder_clean %>%
-  select(Year, `Country Name`, `Population density (people per sq. km of land area)`)%>%
-  drop_na()%>%
-  group_by(Year)%>%
-  slice(which.max(`Population density (people per sq. km of land area)`))
-datatable(average_pop_country_years)
+  select(Year, `Country Name`, `Population density (people per sq. km of land area)`) %>%
+  drop_na(`Population density (people per sq. km of land area)`) %>%
+  group_by(Year) %>%
+  mutate(Year_Rank = rank(-`Population density (people per sq. km of land area)`, )) %>%
+  group_by(`Country Name`) %>%
+  mutate(Average_Ranking = mean(Year_Rank)) %>%
+  arrange(Year_Rank)
 
-g <- ggplot(average_pop_country_years, aes(x = Year, y = `Population density (people per sq. km of land area)`, color = `Country Name`)) +
-  geom_line() +
-  ggtitle("Population Density across all years") +
-  ylab("Population density (people per sq. km of land area)'") +
-  xlab("Year") +
-  theme_classic()
-ggplotly(g)
+datatable(average_pop_country_years, options = list(pageLength = 10, scrollX = "400px", filter = "top"))
 ```
-It can be observed from the table and Plot, that Monaco and Monaco SAR, China, have had a persistently high population density through out the years covered.
+It can be observed from the table, sorting by Year_Rank, that Monaco and Monaco SAR, China, have had a persistently high population density through out the years covered.
 
 ### Question 4
 4. What country (or countries) has shown the greatest increase in 'Life expectancy at birth, total (years)' since 1962?
@@ -161,7 +159,7 @@ life_exp_over_years <- gapminder_clean %>%
   mutate(pop_dif = `2007` - `1962`) %>%
   arrange(desc(pop_dif)) %>%
   top_n(10, pop_dif)
-datatable(life_exp_over_years ,options = list(pageLength = 10, scrollX = '400px', filter = 'top'))
+datatable(life_exp_over_years, options = list(pageLength = 10, scrollX = "400px", filter = "top"))
 
 
 top_high_expe_countries <- life_exp_over_years$`Country Name`
