@@ -1,0 +1,14 @@
+name: Basic_Data_Science_Web_Development_Adon_Chawe_1
+title: Basic_Data_Science_Web_Development_Adon_Chawe_1
+username:
+account: adonch
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 7610206
+bundleId: 6508205
+url: https://adonch.shinyapps.io/Basic_Data_Science_Web_Development_Adon_Chawe_1/
+when: 1668328101.41236
+lastSyncTime: 1668328101.41236
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: README.md
